@@ -37,13 +37,8 @@ class Response(BaseModel):
 
 class JsonResponse(JSONResponse):
 
-    def __init__(self, response, status_code=200, **kwargs):
-        if response.get("node") is None:
-            response = Response(node=response, status=status_code)
-        else:
-            response = Response(**response)
-
-        super().__init__(content=response.model_dump(), status_code=response.status, **kwargs)
+    def __init__(self, response: BaseModel, status_code=200, **kwargs):
+        super().__init__(content=response.model_dump(), status_code=status_code, **kwargs)
 
 
 def validation_error_handler(request, exc: RequestValidationError):

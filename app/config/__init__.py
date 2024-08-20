@@ -1,3 +1,5 @@
+from .jwt_util import JwtUtil
+
 import logging
 
 logging.basicConfig(
