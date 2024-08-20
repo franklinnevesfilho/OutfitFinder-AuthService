@@ -1,0 +1,66 @@
+from sqlalchemy import create_engine
+from app.models import Role, User
+import os
+
+# Database configuration
+_DatabaseConfig = {
+    "NAME": os.getenv("DB_NAME", "auth_db"),
+    "USER": os.getenv("DB_USER", "root"),
+    "PASSWORD": os.getenv("DB_PASSWORD", "root"),
+    "HOST": os.getenv("DB_HOST", "localhost"),
+    "PORT": os.getenv("DB_PORT", "3306"),
+    "TYPE": os.getenv("DB_TYPE", "mysql")
+}
+
+_engine = None
+
+
+def _get_database_uri() -> str:
+    type = _DatabaseConfig.get('TYPE')
+
+    if type == 'sqlite':
+        return f'sqlite:///{_DatabaseConfig.get("NAME")}.db'
+    elif type == 'mysql':
+        return f'mysql+pymysql://{_DatabaseConfig.get("USER")}:{_DatabaseConfig.get("PASSWORD")}@{_DatabaseConfig.get("HOST")}:{_DatabaseConfig.get("PORT")}/{_DatabaseConfig.get("NAME")}'
+    else:
+        raise Exception('Database type not supported')
+
+def get_engine():
+    global _engine
+    if not _engine:
+        _engine = create_engine(_get_database_uri())
+    return _engine
+
+def get_session():
+    from sqlalchemy.orm import sessionmaker
+    Session = sessionmaker(bind=get_engine())
+    return Session()
+
+def db_shutdown():
+    from app.models import Base
+    Base.metadata.drop_all(bind=get_engine())
+
+def db_init():
+    session = get_session()
+
+    roles = ['admin', 'user']
+    existing_roles = session.query(Role).all()
+
+    if existing_roles:
+        session.close()
+        return
+
+    admin = User(
+        firstname='admin',
+        lastname='admin',
+        email='admin@admin.com'
+    )
+    admin.set_password('admin')
+    for role in roles:
+        session.add(Role(name=role))
+
+    admin.roles.append(session.query(Role).filter_by(name='admin').first())
+
+    session.add(admin)
+    session.commit()
+    session.close()

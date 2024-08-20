@@ -1,8 +1,12 @@
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends
-from app.config import JwtUtil
+import secrets
+from ..config import JwtUtil
 
 _oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+def generate_refresh_token():
+    return secrets.token_urlsafe(64)
 
 def get_current_user(token: str = Depends(_oauth2_scheme)) -> dict:
     return JwtUtil.decode_jwt(token)

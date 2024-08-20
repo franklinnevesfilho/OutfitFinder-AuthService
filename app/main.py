@@ -1,31 +1,48 @@
-from fastapi import FastAPI, Depends
+from contextlib import asynccontextmanager, AbstractAsyncContextManager
+from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
+from app.config import database, scheduler, JwtUtil
+from app.models import Base
+from app.routers import auth_router
 from app.handlers import (
     validation_error_handler,
     JsonResponse,
     Response,
-    RequestValidationError,
-    jwt
+    HTTPException_handler
 )
+
+Base.metadata.create_all(bind=database.get_engine())
+
+@asynccontextmanager
+async def lifespan(app) -> AbstractAsyncContextManager[None]:
+    JwtUtil.generate_keys()
+    database.db_init()
+    scheduler.start()
+
+    yield
+
+    database.db_shutdown()
+    scheduler.shutdown()
+
 
 app = FastAPI(
     default_response_class=JsonResponse,
-    exception_handlers={RequestValidationError: validation_error_handler}
+    lifespan=lifespan,
+    exception_handlers={
+        RequestValidationError: validation_error_handler,
+        HTTPException: HTTPException_handler
+    }
 )
+
+app.include_router(auth_router)
 
 
 @app.get("/", tags=["health"])
 async def health() -> Response:
-    return Response(node="Healthy!", status=200)
+    return Response(node="Healthy", status=200)
 
 
-@app.get("/hello/{name}")
-async def say_hello(name: str) -> Response:
-    return Response(node=f"Hello {name}!", status=200)
-
-@app.post("/token", tags=["auth"])
-async def token(payload: dict) -> Response:
-    return Response(node=jwt.sign_jwt(payload), status=200)
-
-@app.get("/verify", tags=["auth"])
-async def verify(payload: dict = Depends(jwt.verify_token)) -> Response:
-    return Response(node=payload, status=200)
+if __name__ == "__main__":
+    import uvicorn
+    import os
+    uvicorn.run(app, host=os.getenv("HOST", "0.0.0.0"), port=int(os.getenv("PORT", 8000)))

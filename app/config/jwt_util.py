@@ -1,14 +1,18 @@
+from fastapi import HTTPException
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
+from datetime import datetime, timedelta
 import jwt
+import pytz
+from fastapi.security import HTTPAuthorizationCredentials
+
 
 class JwtUtil:
     _KEYS: dict[str] = {
         "private": None,
         "public": None
     }
-
 
     @classmethod
     def generate_keys(cls, key_size=2048):
@@ -49,40 +53,36 @@ class JwtUtil:
         return pem
 
     @classmethod
-    def encode_jwt(cls, payload: dict, algorithm='RS256') -> str:
+    def encode_jwt(cls, payload: dict, algorithm='RS256', exp: timedelta = timedelta(minutes=15)) -> str:
         if cls._KEYS["private"] is None:
             raise ValueError("Private key not generated. Call 'generate_keys()' first.")
 
-        payload.update(cls.get_default_payload())
+        # Merge the provided payload with the default payload
+        default_payload = cls._get_default_payload(exp)
+        payload.update(default_payload)
+
         token = jwt.encode(payload, cls.get_private_key_pem(), algorithm=algorithm)
         return token
 
     @classmethod
-    def decode_jwt(cls, token: str, algorithms=None) -> dict:
+    def decode_jwt(cls, token: HTTPAuthorizationCredentials, algorithms=None) -> dict:
         if algorithms is None:
             algorithms = ['RS256']
         if cls._KEYS["public"] is None:
             raise ValueError("Public key not generated. Call 'generate_keys()' first.")
 
-        payload = jwt.decode(token, cls.get_public_key_pem(), algorithms=algorithms)
-        return payload
+        try:
+            payload = jwt.decode(token.credentials.encode("utf-8"), cls.get_public_key_pem(), algorithms=algorithms)
+            return payload
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail="Token has expired")
+        except jwt.InvalidTokenError as e:
+            raise HTTPException(status_code=401, detail="Invalid token: " + str(e))
 
     @classmethod
-    def get_default_exp(cls) -> int:
-        return 3600
-
-    @classmethod
-    def get_default_algorithm(cls) -> str:
-        return 'RS256'
-
-    @classmethod
-    def get_default_payload(cls) -> dict:
+    def _get_default_payload(cls, exp: timedelta) -> dict:
+        now = datetime.now(pytz.utc)
         return {
             "iss": "OF-AuthService",
-            "aud": "fastapi",
-            "exp": cls.get_default_exp(),
-            "alg": cls.get_default_algorithm()
+            "exp": now + exp,
         }
-
-
-JwtUtil.generate_keys()
