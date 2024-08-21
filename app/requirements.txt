@@ -8,3 +8,4 @@ uvicorn~=0.15.0
 pyjwt~=2.3.0
 pytz~=2022.1
 apscheduler~=3.10.0
+cryptography~=36.0.0

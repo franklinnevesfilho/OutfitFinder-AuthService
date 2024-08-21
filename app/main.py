@@ -1,10 +1,10 @@
 from contextlib import asynccontextmanager, AbstractAsyncContextManager
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
-from app.config import database, scheduler, JwtUtil
-from app.models import Base
-from app.routers import auth_router
-from app.handlers import (
+from config import database, scheduler, JwtUtil
+from models import Base
+from routers import auth_router
+from handlers import (
     validation_error_handler,
     JsonResponse,
     Response,
@@ -42,7 +42,3 @@ async def health() -> Response:
     return Response(node="Healthy", status=200)
 
 
-if __name__ == "__main__":
-    import uvicorn
-    import os
-    uvicorn.run(app, host=os.getenv("HOST", "0.0.0.0"), port=int(os.getenv("PORT", 8000)))
