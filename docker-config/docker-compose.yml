@@ -16,7 +16,7 @@ services:
 
   app:
     build:
-      context: ..
+      context: ../
       dockerfile: docker-config/Dockerfile
     restart: always
     ports:

@@ -1,85 +1,116 @@
-from typing import Optional
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import joinedload
 
-from fastapi import HTTPException
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import subqueryload
-
-from app.config import database
+from app.utils import Repository
 from app.models import User, RefreshToken
-from app.schemas import UserLogin, LoginResponse, Response
+from app.schemas import UserLogin, LoginResponse, Response, RefreshRequest
 from app.handlers import jwt
 
-async def get_token(userLogin: UserLogin) -> Response:
-    session = database.get_session()
-
-    try:
-        user: Optional[User] = session.query(User).filter_by(email=userLogin.email).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        access_token = jwt.sign_jwt(
-            {
-                "sub": user.id,
-                "roles": [role.name for role in user.roles]
-            }
-        )
-        return Response(node={"access_token": access_token}, status=200)
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+user_repo = Repository(
+    base_model=User,
+    options=joinedload(User.roles)
+)
+token_repo = Repository(RefreshToken)
 
 
-async def login(userLogin: UserLogin) -> Response:
-    session = database.get_session()
-    try:
-        user: Optional[User] = (session.query(User).options(subqueryload(User.roles)).filter_by(email=userLogin.email).first())
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+def get_token(userLogin: OAuth2PasswordRequestForm) -> Response:
+    """
+    Get a JWT token
+    If the user is found and the password is correct, return a response containing the access token
+    else return an error response with the appropriate status code and message
+    :param userLogin: OAuth2PasswordRequestForm model
+    :return: Response model containing the access token
+    """
 
-        if not user.verify_password(userLogin.password):
-            raise HTTPException(status_code=401, detail="Invalid password")
-
-        refresh_token = RefreshToken(
-            token=str(jwt.generate_refresh_token()),
-            user_id=user.id
-        )
-
-        session.add(refresh_token)
-        session.commit()
+    userLogin = UserLogin(email=userLogin.username, password=userLogin.password)
+    return login(userLogin)
 
 
-        login_response = LoginResponse(
-            access_token=jwt.sign_jwt(
-                {
-                    "sub": user.id,
-                    "rls": [role.name for role in user.roles]
-                 }),
-            refresh_token=refresh_token.token
-        )
-        return Response(node=login_response.model_dump(), status=200)
+def login(userLogin: UserLogin) -> Response:
+    """
+    Login a user
+    If the user is found and the password is correct, return a response containing the access token and refresh token
+    else return an error response with the appropriate status code and message
+    :param userLogin: UserLogin model
+    :return: Response model containing the access token and refresh token
+    """
+    user = user_repo.get_by(email=userLogin.email)
 
-    except SQLAlchemyError:
-        session.rollback()
-        raise HTTPException(status_code=500, detail="Database error")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    if not user:
+        return Response(node={"message": "User not found"}, status=404)
 
-    finally:
-        session.close()
+    if not user.verify_password(userLogin.password):
+        return Response(node={"message": "Invalid password"}, status=401)
 
-async def logout(jwtToken: str) -> Response:
-    session = database.get_session()
-    try:
-        decoded_token = jwt.decode_jwt(jwtToken)
-        user_id = decoded_token["sub"]
-        session.query(RefreshToken).filter_by(user_id=user_id).delete()
-        session.commit()
-        return Response(node={"message": "Logout successful"}, status=200)
-    except SQLAlchemyError:
-        session.rollback()
-        raise HTTPException(status_code=500, detail="Database error")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        session.close()
-    
+    refresh_token = jwt.generate_refresh_token()
+    token = RefreshToken(
+        token=str(refresh_token),
+        user_id=user.id
+    )
+
+    token_repo.create(token)
+
+    login_response = LoginResponse(
+        access_token=_user_jwt(user),
+        refresh_token=str(refresh_token)
+    )
+
+    return Response(node=login_response.model_dump(), status=200)
+
+def logout(jwtToken: str) -> Response:
+    """
+    Logout a user
+    Remove all refresh tokens associated with the user
+    :param jwtToken: HTTPAuthorizationCredentials model containing the JWT token
+    :return: Response model containing the message "Logout successful"
+    """
+    user = user_repo.get_by(id=jwt.decode_jwt(jwtToken)["sub"])
+    if not user:
+        return Response(node={"message": "User not found"}, status=404)
+
+    token = token_repo.get_by(user_id=user.id)
+
+    if not token:
+        return Response(node={"message": "Error logging out"}, status=500)
+
+    token_repo.delete(token)
+
+    return Response(node={"message": "Logout successful"}, status=200)
+
+
+
+async def token_refresh_request(request: RefreshRequest) -> Response:
+    """
+    Refresh a JWT token
+    If the refresh token is valid, return a response containing the new access token
+    else return an error response with the appropriate status code and message
+    :param request: RefreshRequest model containing the refresh token
+    :return: Response model containing the new access token
+    """
+    token = token_repo.get_by(token=request.refresh_token)
+
+    if not token:
+        return Response(node={"message": "Invalid refresh token"}, status=401)
+
+    user = user_repo.get_by(id=token.user_id)
+
+    if not user:
+        return Response(node={"message": "User not found"}, status=404)
+
+    token_repo.delete(token)
+
+    login_response = LoginResponse(
+        access_token=_user_jwt(user),
+        refresh_token=str(jwt.generate_refresh_token())
+    )
+
+    return Response(node=login_response.model_dump(), status=200)
+
+
+def _user_jwt(user: User):
+    return jwt.sign_jwt(
+        {
+            "sub": user.id,
+            "roles": [role.name for role in user.roles]
+        }
+    )

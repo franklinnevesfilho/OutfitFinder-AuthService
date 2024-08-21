@@ -49,6 +49,11 @@ def db_init():
     if existing_roles:
         session.close()
         return
+    else:
+        for role in roles:
+            session.add(Role(name=role))
+
+        session.commit()
 
     admin = User(
         firstname='admin',
@@ -64,12 +69,15 @@ def db_init():
     )
     base_user.set_password('password')
 
-    for role in roles:
-        session.add(Role(name=role))
-
-    admin.roles.append(session.query(Role).filter_by(name='admin').first())
-    base_user.roles.append(session.query(Role).filter_by(name='user').first())
-
     session.add(admin)
+    session.add(base_user)
+
+
+    user_role = session.query(Role).filter_by(name='user').first()
+    admin_role = session.query(Role).filter_by(name='admin').first()
+
+    admin.roles.append(admin_role)
+    base_user.roles.append(user_role)
+
     session.commit()
     session.close()

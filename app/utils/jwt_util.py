@@ -5,7 +5,6 @@ from cryptography.hazmat.backends import default_backend
 from datetime import datetime, timedelta
 import jwt
 import pytz
-from fastapi.security import HTTPAuthorizationCredentials
 
 
 class JwtUtil:
@@ -65,14 +64,23 @@ class JwtUtil:
         return token
 
     @classmethod
-    def decode_jwt(cls, token: HTTPAuthorizationCredentials, algorithms=None) -> dict:
+    def decode_jwt(cls, token: str, algorithms=None) -> dict:
         if algorithms is None:
             algorithms = ['RS256']
         if cls._KEYS["public"] is None:
             raise ValueError("Public key not generated. Call 'generate_keys()' first.")
 
         try:
-            payload = jwt.decode(token.credentials.encode("utf-8"), cls.get_public_key_pem(), algorithms=algorithms)
+            payload = jwt.decode(
+                token.encode("utf-8"),
+                cls.get_public_key_pem(),
+                algorithms=algorithms,
+                verify={
+                    "exp": True,
+                    "iss": False,
+                    "aud": False,
+                }
+            )
             return payload
         except jwt.ExpiredSignatureError:
             raise HTTPException(status_code=401, detail="Token has expired")

@@ -1,10 +1,11 @@
 from contextlib import asynccontextmanager, AbstractAsyncContextManager
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
-from config import database, scheduler, JwtUtil
-from models import Base
-from routers import auth_router
-from handlers import (
+from app.config import database, scheduler
+from app.utils import JwtUtil
+from app.models import Base
+from app.routers import auth_router
+from app.handlers import (
     validation_error_handler,
     JsonResponse,
     Response,

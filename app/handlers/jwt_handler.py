@@ -1,24 +1,29 @@
 from fastapi.security import OAuth2PasswordBearer
-from fastapi import Depends
+from fastapi.security.http import HTTPAuthorizationCredentials
 import secrets
-from ..config import JwtUtil
+from app.utils import JwtUtil
 
 _oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 def generate_refresh_token():
+    """
+    Generates a random string of 64 characters
+    :return: string
+    """
     return secrets.token_urlsafe(64)
 
-def get_current_user(token: str = Depends(_oauth2_scheme)) -> dict:
-    return JwtUtil.decode_jwt(token)
-
-def get_current_user_id(token: str = Depends(_oauth2_scheme)) -> int:
-    return JwtUtil.decode_jwt(token)["sub"]
-
 def decode_jwt(token: str) -> dict:
+    """
+    Decode a JWT token
+    :param token: HTTPAuthorizationCredentials model containing the JWT token
+    :return: The decoded JWT token
+    """
     return JwtUtil.decode_jwt(token)
 
 def sign_jwt(payload: dict) -> str:
+    """
+    Sign a JWT token
+    :param payload: The payload to sign
+    :return: The signed JWT token
+    """
     return JwtUtil.encode_jwt(payload)
-
-def verify_token(token: str = Depends(_oauth2_scheme)) -> dict:
-    return JwtUtil.decode_jwt(token)
