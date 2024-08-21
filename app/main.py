@@ -11,6 +11,14 @@ from handlers import (
     HTTPException_handler
 )
 
+"""
+This is the main entry point for the FastAPI application.
+
+The `lifespan` context manager is used to manage the lifecycle of the application.
+The `database.db_init` method is called to initialize the database connection.
+The `scheduler.start` method is called to start the background scheduler.
+The `JwtUtil.generate_keys` method is called to generate the RSA keys used for JWT signing.
+"""
 Base.metadata.create_all(bind=database.get_engine())
 
 @asynccontextmanager
@@ -37,6 +45,9 @@ app = FastAPI(
 app.include_router(auth_router)
 
 
+"""
+This is the health check endpoint for the FastAPI application.
+"""
 @app.get("/", tags=["health"])
 async def health() -> Response:
     return Response(node="Healthy", status=200)

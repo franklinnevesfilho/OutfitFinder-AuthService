@@ -2,6 +2,18 @@ from typing import Any, List, Optional
 from pydantic import BaseModel
 from app.config import logger
 
+"""
+This is the Response schema. It is used to return a response to the client.
+
+Attributes:
+    node (Any): The response data.
+    errors (List[str]): A list of errors.
+    status (int): The status code of the response.
+    
+    logger (Logger): The logger object used for logging.
+    _status_codes (dict): A dictionary of status codes and their corresponding messages.
+"""
+
 _status_codes = {
     200: "success",
     201: "created",

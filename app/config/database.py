@@ -56,10 +56,19 @@ def db_init():
         email='admin@admin.com'
     )
     admin.set_password('admin')
+
+    base_user = User(
+        firstname='user',
+        lastname='user',
+        email="user@mail.com"
+    )
+    base_user.set_password('password')
+
     for role in roles:
         session.add(Role(name=role))
 
     admin.roles.append(session.query(Role).filter_by(name='admin').first())
+    base_user.roles.append(session.query(Role).filter_by(name='user').first())
 
     session.add(admin)
     session.commit()
