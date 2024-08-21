@@ -5,10 +5,10 @@ import os
 # Database configuration
 _DatabaseConfig = {
     "NAME": os.getenv("DB_NAME", "auth_db"),
-    "USER": os.getenv("DB_USER", "root"),
-    "PASSWORD": os.getenv("DB_PASSWORD", "root"),
+    "USER": os.getenv("DB_USER", "user"),
+    "PASSWORD": os.getenv("DB_PASSWORD", "password"),
     "HOST": os.getenv("DB_HOST", "localhost"),
-    "PORT": os.getenv("DB_PORT", "3306"),
+    "PORT": os.getenv("DB_PORT", "3308"),
     "TYPE": os.getenv("DB_TYPE", "mysql")
 }
 
@@ -16,11 +16,11 @@ _engine = None
 
 
 def _get_database_uri() -> str:
-    type = _DatabaseConfig.get('TYPE')
+    db_type = _DatabaseConfig.get('TYPE')
 
-    if type == 'sqlite':
+    if db_type == 'sqlite':
         return f'sqlite:///{_DatabaseConfig.get("NAME")}.db'
-    elif type == 'mysql':
+    elif db_type == 'mysql':
         return f'mysql+pymysql://{_DatabaseConfig.get("USER")}:{_DatabaseConfig.get("PASSWORD")}@{_DatabaseConfig.get("HOST")}:{_DatabaseConfig.get("PORT")}/{_DatabaseConfig.get("NAME")}'
     else:
         raise Exception('Database type not supported')
