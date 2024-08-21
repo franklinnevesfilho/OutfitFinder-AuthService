@@ -33,8 +33,8 @@ def get_engine():
 
 def get_session():
     from sqlalchemy.orm import sessionmaker
-    Session = sessionmaker(bind=get_engine())
-    return Session()
+    session = sessionmaker(bind=get_engine())
+    return session()
 
 def db_shutdown():
     from app.models import Base
