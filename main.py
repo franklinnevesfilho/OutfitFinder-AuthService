@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager, AbstractAsyncContextManager
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
-from app.config import database, scheduler
+from app.config import database, scheduler, logger
 from app.utils import JwtUtil
 from app.models import Base
 from app.routers import auth_router
@@ -27,11 +27,13 @@ async def lifespan(app) -> AbstractAsyncContextManager[None]:
     JwtUtil.generate_keys()
     database.db_init()
     scheduler.start()
+    logger.info("Application started")
 
     yield
 
     database.db_shutdown()
     scheduler.shutdown()
+    logger.info("Application stopped")
 
 
 app = FastAPI(

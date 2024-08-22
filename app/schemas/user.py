@@ -33,7 +33,7 @@ class User(BaseModel):
         }
 
 class UserLogin(BaseModel):
-    email: str = Field(..., examples=["ueser@mail.com"])
+    email: str = Field(..., examples=["johndoe@mail.com"])
     password: str = Field(..., examples=["password"])
 
     class Config:

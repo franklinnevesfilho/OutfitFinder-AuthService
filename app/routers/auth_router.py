@@ -1,11 +1,20 @@
 from typing import Annotated
 from fastapi import APIRouter
 from fastapi.params import Depends
-from fastapi.security import (HTTPBearer, OAuth2PasswordBearer,
-                              OAuth2PasswordRequestForm)
-
+from fastapi.security import (
+    HTTPBearer,
+    OAuth2PasswordBearer,
+    OAuth2PasswordRequestForm
+)
 from app.handlers import auth
-from app.schemas import UserLogin, Response, RefreshRequest, UserRegistration, Tokens
+from app.schemas import (
+    UserLogin,
+    Response,
+    RefreshRequest,
+    UserRegistration,
+    Tokens,
+    Password
+)
 
 """
 This is the Auth Router module
@@ -56,7 +65,7 @@ async def refresh_token(refresh_request: RefreshRequest) -> Response:
 
 @router.post("/register")
 async def register(user: UserRegistration) -> Response:
-    return await auth.register(user)
+    return auth.register(user)
 
 @router.post("/login")
 async def login(user: UserLogin) -> Response:
@@ -69,4 +78,8 @@ async def logout(tokens: Tokens) -> Response:
 @router.post("/logout")
 async def logout(tokens: Tokens) -> Response:
     return auth.logout(tokens)
+
+@router.get("/password/reset")
+async def reset_password(password: Password, token: Annotated[str, Depends(auth_scheme)]) -> Response :
+    return auth.reset_password(token, password)
 
