@@ -11,22 +11,9 @@ This service is responsible for authenticating users and authorizing them to acc
 - User profile update
 - User profile retrieval
 - User profile deletion
-- User profile image upload
-- User profile image retrieval
-- User profile image deletion
 
-## Technologies
+## Libraries
 
-- FastAPI
-- Pydantic
-- SQLAlchemy
-- PYJWT
-- Bcrypt
-- Docker
-- Docker Compose
-- MySQL
-- MinIO
-- Pytest
 
 ## Setup
 

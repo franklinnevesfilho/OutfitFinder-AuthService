@@ -1,4 +1,4 @@
 from .user import User, UserRegistration, UserLogin
-from .login_response import LoginResponse
+from .tokens import Tokens
 from .response import Response
 from .refresh_request import RefreshRequest

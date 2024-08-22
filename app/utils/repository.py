@@ -92,3 +92,16 @@ class Repository:
             return []
         finally:
             session.close()
+
+    def delete_by(self, **kwargs) -> bool:
+        session = database.get_session()
+        try:
+            self._query(session).filter_by(**kwargs).delete()
+            session.commit()
+            return True
+        except SQLAlchemyError as e:
+            logger.error(f"Error deleting {self.base_model.__name__} by {kwargs}: {str(e)}")
+            session.rollback()
+            return False
+        finally:
+            session.close()

@@ -3,7 +3,7 @@ from sqlalchemy.orm import joinedload
 
 from app.utils import Repository
 from app.models import User, RefreshToken
-from app.schemas import UserLogin, LoginResponse, Response, RefreshRequest
+from app.schemas import UserLogin, Tokens, Response, RefreshRequest
 from app.handlers import jwt
 
 user_repo = Repository(
@@ -50,32 +50,29 @@ def login(userLogin: UserLogin) -> Response:
 
     token_repo.create(token)
 
-    login_response = LoginResponse(
+    login_response = Tokens(
         access_token=_user_jwt(user),
         refresh_token=str(refresh_token)
     )
 
     return Response(node=login_response.model_dump(), status=200)
 
-def logout(jwtToken: str) -> Response:
+def logout(tokens: Tokens, option: str = None) -> Response:
     """
-    Logout a user
-    Remove all refresh tokens associated with the user
-    :param jwtToken: HTTPAuthorizationCredentials model containing the JWT token
-    :return: Response model containing the message "Logout successful"
     """
-    user = user_repo.get_by(id=jwt.decode_jwt(jwtToken)["sub"])
-    if not user:
-        return Response(node={"message": "User not found"}, status=404)
+    # first verify the jwt token then delete the refresh token
+    result = False
+    payload = jwt.decode_jwt(tokens.access_token)
+    if payload:
+        if option == "all":
+            result = token_repo.delete_by(user_id=payload["sub"])
+        elif tokens.refresh_token:
+            result = token_repo.delete_by(token=tokens.refresh_token)
 
-    token = token_repo.get_by(user_id=user.id)
-
-    if not token:
+    if result:
+        return Response(node={"message": "Logged out"}, status=200)
+    else:
         return Response(node={"message": "Error logging out"}, status=500)
-
-    token_repo.delete(token)
-
-    return Response(node={"message": "Logout successful"}, status=200)
 
 
 
@@ -99,7 +96,7 @@ async def token_refresh_request(request: RefreshRequest) -> Response:
 
     token_repo.delete(token)
 
-    login_response = LoginResponse(
+    login_response = Tokens(
         access_token=_user_jwt(user),
         refresh_token=str(jwt.generate_refresh_token())
     )

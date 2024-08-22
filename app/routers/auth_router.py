@@ -1,10 +1,11 @@
 from typing import Annotated
 from fastapi import APIRouter
 from fastapi.params import Depends
-from fastapi.security import HTTPBearer, OAuth2PasswordBearer, OAuth2PasswordRequestForm, HTTPAuthorizationCredentials
+from fastapi.security import (HTTPBearer, OAuth2PasswordBearer,
+                              OAuth2PasswordRequestForm)
 
 from app.handlers import auth
-from app.schemas import UserLogin, Response, RefreshRequest, UserRegistration
+from app.schemas import UserLogin, Response, RefreshRequest, UserRegistration, Tokens
 
 """
 This is the Auth Router module
@@ -61,7 +62,11 @@ async def register(user: UserRegistration) -> Response:
 async def login(user: UserLogin) -> Response:
     return auth.login(user)
 
+@router.post("/logout/all")
+async def logout(tokens: Tokens) -> Response:
+    return auth.logout(tokens, option="all")
+
 @router.post("/logout")
-async def logout(token: Annotated[str, Depends(auth_scheme)]) -> Response:
-    return auth.logout(token)
+async def logout(tokens: Tokens) -> Response:
+    return auth.logout(tokens)
 
