@@ -4,9 +4,9 @@ from sqlalchemy.orm import relationship
 from .base import Base
 
 
-class RefreshToken(Base):
+class SessionToken(Base):
     """
-    Refresh token model
+    Session token model
 
     Attributes:
     -----------
@@ -26,17 +26,9 @@ class RefreshToken(Base):
     has_expired() -> bool
         Check if the refresh token has expired
     """
-    __tablename__ = "refresh_tokens"
+    __tablename__ = "session_tokens"
 
     token = Column(String(100), primary_key=True)
     user_id = Column(String(36), ForeignKey("users.id"))
-    user = relationship("User", back_populates="refresh_tokens")
+    user = relationship("User", back_populates="session_tokens")
     created_at = Column(DateTime, default=datetime.now())
-    expires = Column(DateTime, default=lambda: datetime.now() + timedelta(days=7))
-
-    def has_expired(self) -> bool:
-        """
-        Check if the refresh token has expired
-        :return: bool
-        """
-        return datetime.now() > self.expires

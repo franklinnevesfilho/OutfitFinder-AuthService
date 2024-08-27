@@ -60,7 +60,7 @@ async def get_token(credentials: Annotated[OAuth2PasswordRequestForm, Depends()]
     return auth.get_token(credentials)
 
 @router.post("/token/refresh")
-async def refresh_token(refresh_request: RefreshRequest) -> Response:
+async def session_token(refresh_request: RefreshRequest) -> Response:
     return await auth.token_refresh_request(refresh_request)
 
 @router.post("/register")

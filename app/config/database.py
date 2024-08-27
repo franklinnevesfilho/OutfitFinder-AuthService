@@ -21,7 +21,9 @@ def _get_database_uri() -> str:
     if db_type == 'sqlite':
         return f'sqlite:///{_DatabaseConfig.get("NAME")}.db'
     elif db_type == 'mysql':
-        return f'mysql+pymysql://{_DatabaseConfig.get("USER")}:{_DatabaseConfig.get("PASSWORD")}@{_DatabaseConfig.get("HOST")}:{_DatabaseConfig.get("PORT")}/{_DatabaseConfig.get("NAME")}'
+        return (f'mysql+pymysql://{_DatabaseConfig.get("USER")}:'
+                f'{_DatabaseConfig.get("PASSWORD")}@{_DatabaseConfig.get("HOST")}:'
+                f'{_DatabaseConfig.get("PORT")}/{_DatabaseConfig.get("NAME")}')
     else:
         raise Exception('Database type not supported')
 
