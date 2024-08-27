@@ -36,7 +36,7 @@ class User(Base):
         The user's profile picture URL
     roles : List[Role]
         The roles assigned to the user
-    refresh_tokens : List[RefreshToken]
+    session_tokens : List[SessionToken]
         The refresh tokens associated with the user
 
     full_name : str
@@ -62,7 +62,7 @@ class User(Base):
     roles = relationship("Role", secondary=user_roles, back_populates="users")
 
     # New relationship with RefreshToken
-    refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
+    session_tokens = relationship("SessionToken", back_populates="user", cascade="all, delete-orphan")
 
     @property
     def full_name(self):

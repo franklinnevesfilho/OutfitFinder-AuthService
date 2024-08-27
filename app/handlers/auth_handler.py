@@ -2,7 +2,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import joinedload
 
 from app.utils import Repository, email_util
-from app.models import User, RefreshToken
+from app.models import User, SessionToken
 from app.schemas import UserLogin, Tokens, Response, RefreshRequest, UserRegistration, Password
 from app.handlers import jwt
 
@@ -42,40 +42,40 @@ user_repo = Repository(
     base_model=User,
     options=joinedload(User.roles)
 )
-token_repo = Repository(RefreshToken)
+token_repo = Repository(SessionToken)
 
 
-def get_token(userLogin: OAuth2PasswordRequestForm) -> Response:
+def get_token(user_login: OAuth2PasswordRequestForm) -> Response:
     """
     Get a JWT token
     If the user is found and the password is correct, return a response containing the access token
     else return an error response with the appropriate status code and message
-    :param userLogin: OAuth2PasswordRequestForm model
+    :param user_login: OAuth2PasswordRequestForm model
     :return: Response model containing the access token
     """
 
-    userLogin = UserLogin(email=userLogin.username, password=userLogin.password)
-    return login(userLogin)
+    user_login = UserLogin(email=user_login.username, password=user_login.password)
+    return login(user_login)
 
 
-def login(userLogin: UserLogin) -> Response:
+def login(user_login: UserLogin) -> Response:
     """
     Login a user
     If the user is found and the password is correct, return a response containing the access token and refresh token
     else return an error response with the appropriate status code and message
-    :param userLogin: UserLogin model
+    :param user_login: UserLogin model
     :return: Response model containing the access token and refresh token
     """
-    user = user_repo.get_by(email=userLogin.email)
+    user = user_repo.get_by(email=user_login.email)
 
     if not user:
         return Response(node={"message": "User not found"}, status=404)
 
-    if not user.verify_password(userLogin.password):
+    if not user.verify_password(user_login.password):
         return Response(node={"message": "Invalid password"}, status=401)
 
     refresh_token = jwt.generate_refresh_token()
-    token = RefreshToken(
+    token = SessionToken(
         token=str(refresh_token),
         user_id=user.id
     )
