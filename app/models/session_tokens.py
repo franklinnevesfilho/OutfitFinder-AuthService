@@ -30,5 +30,5 @@ class SessionToken(Base):
 
     token = Column(String(100), primary_key=True)
     user_id = Column(String(36), ForeignKey("users.id"))
-    user = relationship("User", back_populates="refresh_tokens")
+    user = relationship("User", back_populates="session_tokens")
     created_at = Column(DateTime, default=datetime.now())

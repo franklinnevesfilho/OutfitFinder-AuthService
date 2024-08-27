@@ -74,9 +74,9 @@ def login(user_login: UserLogin) -> Response:
     if not user.verify_password(user_login.password):
         return Response(node={"message": "Invalid password"}, status=401)
 
-    refresh_token = jwt.generate_refresh_token()
+    session_token = jwt.generate_session_token()
     token = SessionToken(
-        token=str(refresh_token),
+        token=str(session_token),
         user_id=user.id
     )
 
@@ -84,7 +84,7 @@ def login(user_login: UserLogin) -> Response:
 
     login_response = Tokens(
         access_token=_user_jwt(user),
-        refresh_token=str(refresh_token)
+        session_token=str(session_token)
     )
 
     return Response(node=login_response.model_dump(), status=200)
@@ -102,8 +102,8 @@ def logout(tokens: Tokens, option: str = None) -> Response:
     if payload:
         if option == "all":
             result = token_repo.delete_by(user_id=payload["sub"])
-        elif tokens.refresh_token:
-            result = token_repo.delete_by(token=tokens.refresh_token)
+        elif tokens.session_token:
+            result = token_repo.delete_by(token=tokens.session_token)
 
     if result:
         return Response(node={"message": "Logged out"}, status=200)
@@ -144,7 +144,7 @@ async def token_refresh_request(request: RefreshRequest) -> Response:
     :param request: RefreshRequest model
     :return: Response model containing the new access token
     """
-    token = token_repo.get_by(token=request.refresh_token)
+    token = token_repo.get_by(token=request.session_token)
 
     if not token:
         return Response(node={"message": "Invalid refresh token"}, status=401)
@@ -158,7 +158,7 @@ async def token_refresh_request(request: RefreshRequest) -> Response:
 
     login_response = Tokens(
         access_token=_user_jwt(user),
-        refresh_token=str(jwt.generate_refresh_token())
+        session_token=str(jwt.generate_session_token())
     )
 
     return Response(node=login_response.model_dump(), status=200)
@@ -181,7 +181,7 @@ def reset_password_request(token: str) -> Response:
     if not user:
         return Response(node={"message": "User not found"}, status=404)
 
-    reset_code = jwt.generate_refresh_token()
+    reset_code = jwt.generate_session_token()
 
     email_util.send_password_reset_email(user.email, reset_code)
 

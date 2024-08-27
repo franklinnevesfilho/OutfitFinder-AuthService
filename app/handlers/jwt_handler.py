@@ -5,7 +5,7 @@ from app.utils import JwtUtil
 
 _oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-def generate_refresh_token():
+def generate_session_token():
     """
     Generates a random string of 64 characters
     :return: string
