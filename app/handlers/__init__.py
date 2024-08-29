@@ -1,2 +1,3 @@
-from . import jwt_handler as jwt
-from . import user_handler as auth
+from . import jwt_handler
+from . import user_handler
+from . import email_handler

@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from app.handlers import email_handler
 from app.schemas import Response
 
 router = APIRouter(
@@ -8,8 +9,8 @@ router = APIRouter(
 
 @router.post("/verify-request")
 async def verify_request() -> Response:
-    pass
+    return email_handler.verification_request()
 
 @router.get("/{verification_code}")
 async def verify(verification_code: str) -> Response:
-    pass
+    return email_handler.verify(verification_code)

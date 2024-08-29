@@ -5,7 +5,7 @@ from fastapi.security import (
     HTTPBearer,
     OAuth2PasswordBearer,
 )
-from app.handlers import auth
+from app.handlers import user_handler
 from app.schemas import (
     UserLogin,
     Response,
@@ -54,13 +54,13 @@ router = APIRouter(
 
 @router.post("/register")
 async def register(user: UserRegistration) -> Response:
-    return auth.register(user)
+    return user_handler.register(user)
 
 @router.post("/login")
 async def login(user: UserLogin) -> Response:
-    return auth.login(user)
+    return user_handler.login(user)
 
 @router.get("/password/reset")
 async def reset_password(password: Password, token: Annotated[str, Depends(auth_scheme)]) -> Response :
-    return auth.reset_password(token, password)
+    return user_handler.reset_password(token, password)
 

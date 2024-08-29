@@ -1,10 +1,10 @@
 from sqlalchemy.orm import joinedload
 from typing import Optional
 
-from app.utils import Repository, email_util
+from app.utils import Repository
 from app.models import User
 from app.schemas import UserLogin, Response, UserRegistration, Password
-from app.handlers import jwt
+from app.handlers import jwt_handler
 
 
 """
@@ -97,20 +97,6 @@ def reset_password_request(token: str) -> Response:
     :param token: string
     :return: Response model
     """
-    payload = jwt.decode_jwt(token)
-    if not payload:
-        return Response(node={"message": "Invalid token"}, status=401)
-
-    userid = payload["sub"]
-    user = user_repo.get_by(id=userid)
-
-    if not user:
-        return Response(node={"message": "User not found"}, status=404)
-
-    reset_code = jwt.generate_session_token()
-
-    email_util.send_password_reset_email(user.email, reset_code)
-
     return Response(node={"message": "Password reset request sent"}, status=200)
 
 def reset_password(token: str, password: Password) -> Response:
@@ -123,7 +109,7 @@ def reset_password(token: str, password: Password) -> Response:
     :return: Response model
     """
     response = Response()
-    payload = jwt.decode_jwt(token)
+    payload = jwt_handler.decode_jwt(token)
     if payload:
         userid = payload["sub"]
         user = user_repo.get_by(id=userid)
@@ -152,7 +138,7 @@ def _user_jwt(user: User):
     :param user:
     :return: the jwt token containing the user's id and roles
     """
-    return jwt.sign_jwt(
+    return jwt_handler.sign_jwt(
         {
             "sub": user.id,
             "roles": [role.name for role in user.roles],
