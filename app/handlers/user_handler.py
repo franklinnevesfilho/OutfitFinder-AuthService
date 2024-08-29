@@ -1,10 +1,11 @@
-from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import joinedload
+from typing import Optional
 
 from app.utils import Repository, email_util
-from app.models import User, SessionToken
-from app.schemas import UserLogin, Tokens, Response, RefreshRequest, UserRegistration, Password
+from app.models import User
+from app.schemas import UserLogin, Response, UserRegistration, Password
 from app.handlers import jwt
+
 
 """
 This is the Auth Handler module
@@ -42,20 +43,6 @@ user_repo = Repository(
     base_model=User,
     options=joinedload(User.roles)
 )
-token_repo = Repository(SessionToken)
-
-
-def get_token(user_login: OAuth2PasswordRequestForm) -> Response:
-    """
-    Get a JWT token
-    If the user is found and the password is correct, return a response containing the access token
-    else return an error response with the appropriate status code and message
-    :param user_login: OAuth2PasswordRequestForm model
-    :return: Response model containing the access token
-    """
-
-    user_login = UserLogin(email=user_login.username, password=user_login.password)
-    return login(user_login)
 
 
 def login(user_login: UserLogin) -> Response:
@@ -66,7 +53,7 @@ def login(user_login: UserLogin) -> Response:
     :param user_login: UserLogin model
     :return: Response model containing the access token and refresh token
     """
-    user = user_repo.get_by(email=user_login.email)
+    user: Optional[User] = user_repo.get_by(email=user_login.email)
 
     if not user:
         return Response(node={"message": "User not found"}, status=404)
@@ -74,41 +61,8 @@ def login(user_login: UserLogin) -> Response:
     if not user.verify_password(user_login.password):
         return Response(node={"message": "Invalid password"}, status=401)
 
-    session_token = jwt.generate_session_token()
-    token = SessionToken(
-        token=str(session_token),
-        user_id=user.id
-    )
+    return Response(node=_user_jwt(user), status=200)
 
-    token_repo.create(token)
-
-    login_response = Tokens(
-        access_token=_user_jwt(user),
-        session_token=str(session_token)
-    )
-
-    return Response(node=login_response.model_dump(), status=200)
-
-def logout(tokens: Tokens, option: str = None) -> Response:
-    """
-    Logout a user
-    :param tokens: An object containing the access token and refresh token
-    :param option: A string indicating the logout option
-    :return: Response model
-    """
-    # first verify the jwt token then delete the refresh token
-    result = False
-    payload = jwt.decode_jwt(tokens.access_token)
-    if payload:
-        if option == "all":
-            result = token_repo.delete_by(user_id=payload["sub"])
-        elif tokens.session_token:
-            result = token_repo.delete_by(token=tokens.session_token)
-
-    if result:
-        return Response(node={"message": "Logged out"}, status=200)
-    else:
-        return Response(node={"message": "Error logging out"}, status=500)
 
 def register(user: UserRegistration) -> Response:
     """
@@ -134,34 +88,6 @@ def register(user: UserRegistration) -> Response:
 
     return login(UserLogin(email=user.email, password=user.password))
 
-
-
-async def token_refresh_request(request: RefreshRequest) -> Response:
-    """
-    Refresh a JWT token
-    If the refresh token is valid, return a response containing the new access token
-    else return an error response with the appropriate status code and message
-    :param request: RefreshRequest model
-    :return: Response model containing the new access token
-    """
-    token = token_repo.get_by(token=request.session_token)
-
-    if not token:
-        return Response(node={"message": "Invalid refresh token"}, status=401)
-
-    user = user_repo.get_by(id=token.user_id)
-
-    if not user:
-        return Response(node={"message": "User not found"}, status=404)
-
-    token_repo.delete(token)
-
-    login_response = Tokens(
-        access_token=_user_jwt(user),
-        session_token=str(jwt.generate_session_token())
-    )
-
-    return Response(node=login_response.model_dump(), status=200)
 
 def reset_password_request(token: str) -> Response:
     """
@@ -229,6 +155,6 @@ def _user_jwt(user: User):
     return jwt.sign_jwt(
         {
             "sub": user.id,
-            "rls": [role.name for role in user.roles]
+            "roles": [role.name for role in user.roles],
         }
     )

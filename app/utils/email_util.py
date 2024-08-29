@@ -7,10 +7,10 @@ def _template(name: str):
     return _template_dir + f"/{name}.html"
 
 _smtp_server: dict = {
-    "host": os.getenv("SMTP_HOST", "live.smtp.mailtrap.io"),
-    "port": os.getenv("SMTP_PORT", "587"),
-    "user": os.getenv("SMTP_USER", "api"),
-    "password": os.getenv("SMTP_PASSWORD", "837f38ee652502f596803309050872f5"),
+    "host": os.getenv("SMTP_HOST", "smtp.gmail.com"),
+    "port": os.getenv("SMTP_PORT", "25"),
+    "user": os.getenv("SMTP_USER", "user"),
+    "password": os.getenv("SMTP_PASSWORD", "password"),
 }
 
 def _send_email(to: str, subject: str, body: str) -> None:
@@ -28,7 +28,7 @@ def _send_email(to: str, subject: str, body: str) -> None:
     with smtplib.SMTP(_smtp_server["host"], _smtp_server["port"]) as server:
         server.starttls()
         server.login(_smtp_server["user"], _smtp_server["password"])
-        server.sendmail(f"noreply@{_smtp_server["host"]}", to, msg.as_string())
+        server.sendmail(_smtp_server["host"], to, msg.as_string())
 
 def send_password_reset_email(to: str, reset_code: str) -> None:
     """

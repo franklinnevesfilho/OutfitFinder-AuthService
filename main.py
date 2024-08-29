@@ -2,15 +2,11 @@ from contextlib import asynccontextmanager, AbstractAsyncContextManager
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from app.config import database, scheduler, logger
-from app.utils import JwtUtil
+from app.utils import JwtUtil, response_util
 from app.models import Base
-from app.routers import auth_router
-from app.handlers import (
-    validation_error_handler,
-    JsonResponse,
-    Response,
-    HTTPException_handler
-)
+from app.routers import *
+
+Response = response_util.Response
 
 """
 This is the main entry point for the FastAPI application.
@@ -37,15 +33,17 @@ async def lifespan(app) -> AbstractAsyncContextManager[None]:
 
 
 app = FastAPI(
-    default_response_class=JsonResponse,
+    default_response_class=response_util.JsonResponse,
     lifespan=lifespan,
     exception_handlers={
-        RequestValidationError: validation_error_handler,
-        HTTPException: HTTPException_handler
+        RequestValidationError: response_util.validation_error_handler,
+        HTTPException: response_util.HTTPException_handler
     }
 )
 
-app.include_router(auth_router)
+app.include_router(user_router)
+app.include_router(email_router)
+app.include_router(token_router)
 
 
 """
@@ -54,5 +52,9 @@ This is the health check endpoint for the FastAPI application.
 @app.get("/", tags=["health"])
 async def health() -> Response:
     return Response(node="Healthy", status=200)
+
+@app.get("/public-key")
+async def public_key() -> Response:
+    return Response(public_key=JwtUtil.get_public_key_pem(), status=200)
 
 

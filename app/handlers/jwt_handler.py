@@ -5,13 +5,6 @@ from app.utils import JwtUtil
 
 _oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-def generate_session_token():
-    """
-    Generates a random string of 64 characters
-    :return: string
-    """
-    return secrets.token_urlsafe(64)
-
 def decode_jwt(token: str) -> dict:
     """
     Decode a JWT token

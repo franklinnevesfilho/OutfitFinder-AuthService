@@ -60,8 +60,10 @@ def db_init():
     admin = User(
         firstname='admin',
         lastname='admin',
-        email='admin@admin.com'
+        email='admin@admin.com',
+        verified=True
     )
+
     admin.set_password('admin')
 
     base_user = User(

@@ -6,7 +6,6 @@ This service is responsible for authenticating users and authorizing them to acc
 
 - User registration
 - User login
-- User logout
 - User password reset
 - User profile update
 - User profile retrieval

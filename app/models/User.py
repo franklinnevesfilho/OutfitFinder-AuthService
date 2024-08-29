@@ -36,8 +36,6 @@ class User(Base):
         The user's profile picture URL
     roles : List[Role]
         The roles assigned to the user
-    session_tokens : List[SessionToken]
-        The refresh tokens associated with the user
 
     full_name : str
         The user's full name (read-only)
@@ -56,13 +54,11 @@ class User(Base):
     email = Column(String(50), unique=True, nullable=False)
     phone_number = Column(String(50), nullable=True, default=None)
     _password = Column(String(100))
+    verified = Column(Boolean, default=False)
     two_factor_enabled = Column(Boolean, default=False)
     profile_picture = Column(String(100), default=None)
 
     roles = relationship("Role", secondary=user_roles, back_populates="users")
-
-    # New relationship with RefreshToken
-    session_tokens = relationship("SessionToken", back_populates="user", cascade="all, delete-orphan")
 
     @property
     def full_name(self):

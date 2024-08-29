@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  db:
+  auth-mysql:
     image: mysql:5.7
     restart: always
     environment:
@@ -24,9 +24,9 @@ services:
     volumes:
       - ../app:/app
     depends_on:
-      - db
+      - auth-mysql
     environment:
-      DB_HOST: db
+      DB_HOST: auth-mysql
       DB_USER: user
       DB_PASSWORD: password
       DB_NAME: auth_db
